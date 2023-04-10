@@ -8,7 +8,7 @@ import yt_dlp as youtube_dl
 intents = discord.Intents().all()
 client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix='/',intents=intents)
-key = 'MTA5MjU3MTIzODM4MTE0NjEyNA.GqpaoX.CSz_11_SlB3Iy2hyxTDD8fTJFLVFDBZF2lJjAo'
+key = ''
 ytdl_format_options = {
     'format': 'bestaudio/best',
     'restrictfilenames': True,
