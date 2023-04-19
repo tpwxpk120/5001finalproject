@@ -12,7 +12,7 @@ Discord Music Bot is a bot that allows users to play music in their Discord voic
 #### 3. Setting up your discord bot and Token          (Go youtube to see it)
 
 ## Warning!!!
-### This bot will use your computer as the sever，so If too many people use it or if someone uses it to play super-long videos the computer may download huge amounts of audio. (The ability to limit audio size has not been added yet)
+### This bot will use your computer as the sever，so if too many people use this bot or if someone uses it to play super-long videos, the computer may download huge amounts of audio. (The ability to limit audio size has not been added yet)
 ### Don't tell others about your Token
 
 ## Usage
