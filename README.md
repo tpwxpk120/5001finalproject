@@ -12,10 +12,18 @@ Discord Music Bot is a bot that allows users to play music in their Discord voic
 
 ## Usage
 Use the /join command to make bot join the voice channel.
+
 Use the /leave command to make bot leave the voice channel.
+
 Use the /plays command to play songs in playlist, only add to the list then bot will play.
+
 Use the /addq command to add a song to the list.
+
 Use the /pause command to pause the currently playing song.
+
 Use the /resume command to resume a paused song.
+
 Use the /stop command to stop the bot playing current song and play next song.
+
 Use the /playlist command to tell you what song in the playlist.
+
