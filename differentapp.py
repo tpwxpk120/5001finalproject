@@ -1,16 +1,24 @@
 import asyncio
 import discord
 from discord.ext import commands,tasks
-import os
-from dotenv import load_dotenv
 import yt_dlp as youtube_dl
 
+
+key = 'Your Token'
 intents = discord.Intents().all()
-client = discord.Client(intents=intents)
-bot = commands.Bot(command_prefix='/',intents=intents)
-key = ''
+client = discord.Client(intents = intents)
+
+#Initializing the bot and "/" need to add before any bot command.
+bot = commands.Bot(command_prefix='/', intents = intents)
+
+#Set an empty queue for music list 
+queue = []
+
+
+# Setting up the YoutubeDL object with some configuration options
 ytdl_format_options = {
     'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
@@ -19,114 +27,178 @@ ytdl_format_options = {
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
+    'source_address': '0.0.0.0'
 }
 
 ffmpeg_options = {'options': '-vn'}
-
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
+#The YTDLSource class that represents a playable audio source
 class YTDLSource(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, volume=0.5):
+    def __init__(self, source, *, data, volume = 0.5):
         super().__init__(source, volume)
         self.data = data
         self.title = data.get('title')
         self.url = ""
 
     @classmethod
-    async def from_url(cls, url, *, loop=None, stream=False):
+    async def from_url(cls, url, *, loop = None, stream = False):
         loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
-        if 'entries' in data:
+        #Extract the song using YoutubeDL in a separate thread
+        link = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download = not stream))
+        if 'entries' in link:
             # take first item from a playlist
-            data = data['entries'][0]
-        filename = data['title'] if stream else ytdl.prepare_filename(data)
+            link = link['entries'][0]
+        #Get the filename of the song based on whether it's a stream or a file
+        filename = link['title'] if stream else ytdl.prepare_filename(link)
         return filename
-    
 
-@client.event
+
+#Event handler for when the bot is ready
+@bot.event
 async def on_ready():
-    print(f"Bot logged in as {client.user}")
+    print("|Bot is ready.|")
 
 
-@bot.command(name= 'join', help= 'Tells the bot to join the voice channel')
-async def join(ctx):
+#Function to show the playlist
+async def show_playlist(msg):
     try:
-        if not ctx.message.author.voice:
-            await ctx.send("{} is not connected to a voice channel".format(ctx.message.author.name))
-            return
+        #Join the songs in queue into a string with index number for each song
+        playlist = ""
+        if len(queue) == 0:
+            #If the playlist is currently empty
+            playlist = "The playlist is currently empty."
+            await msg.send("The playlist is currently empty.")
         else:
-            channel = ctx.message.author.voice.channel
-        await channel.connect()
+            for i, song in enumerate(queue):
+                #Add each song to the playlist string with its index number
+                playlist += f"{i+1}. {song}\n"
+                await msg.send(f"Playlist:\n{playlist}")
     except Exception as err:
+        print("Playlist has error")
+
+
+#Command to make the bot join the voice channel
+@bot.command(name = 'join', help = 'Tells the bot to join the voice channel')
+async def join(msg):
+    try:
+        #Bot joins the voice channel that the user is currently connected to
+        channel = msg.author.voice.channel
+        await channel.connect()
+    except AttributeError:
+        #If the user is not connected to a voice channel
+        await msg.send("{} is not connected to a voice channel".format(msg.author.name))
+    except Exception as err:
+        #If it it not problem of user, check the bot
         print("Bot is not connect")
 
-@bot.command(name= 'play', help= 'To play song')
-async def play(ctx, url):
+
+#Command to play a song
+@bot.command(name = 'plays', help = 'To play song')
+async def play_song(msg):
     try:
-        server = ctx.message.guild
-        channel = server.voice_client
+        server = msg.message.guild
+        voice_channel = server.voice_client
         try:
-            async with ctx.typing():
-                try:
-                    filename = await YTDLSource.from_url(url, loop=bot.loop)
-                    channel.play(discord.FFmpegPCMAudio(
-                        executable="ffmpeg.exe", source=filename))
-                    await ctx.send('**Now playing:** {}'.format(filename))
-                except Exception as err:
-                    print("ffmpeg.exe is not found.")
-            await ctx.send('**Now playing:** {}'.format(filename))
+            while len(queue) > 0:
+                #Get the next song from the queue
+                filename = queue.pop(0)
+                #Play all the song in the queue automatically
+                voice_channel.play(discord.FFmpegPCMAudio(
+                    executable = "ffmpeg.exe", source = filename), after = lambda x: asyncio.run_coroutine_threadsafe(play_song(msg), bot.loop))
+                await msg.send('——Now playing: {}'.format(filename))
+                #Wait for the song to finish playing
+                while voice_channel.is_playing():
+                    await asyncio.sleep(1)
         except Exception as err:
-            print("file is not found.")
+            print("Something wrong with play function")
     except Exception as err:
-        print("Bot is not playing.")
+        print("Something wrong with user sending")
 
 
-@bot.command(name= 'pause', help= 'This command pauses the song')
-async def pause(ctx):
+#Command to add a song to the queue
+@bot.command(name = 'addq', help = 'Add a song to the list')
+async def enqueue(msg, url):
+    async with msg.typing():
+        try:
+            #Get the filename of the song from the url and add it to the queue
+            filename = await YTDLSource.from_url(url)
+            queue.append(filename)
+            await msg.send('Added to queue')
+        except Exception as err:
+            print("Add to queue failed")
+
+
+#Command to resume the currently paused song
+@bot.command(name = 'pauses', help = 'This command pauses the song')
+async def pause(msg):
     try:
-        client = ctx.message.guild.voice_client
-        if client.is_playing():
-            await client.pause()
+        #Get the voice client for the guild the message was sent from
+        channel = msg.message.guild.voice_client
+        #If the client is currently playing a song, pause it
+        if channel.is_playing():
+            await channel.pause()
         else:
-            await ctx.send("The bot is paused")
+            #Otherwise, inform the user that the bot is already paused
+            await msg.send("The bot is paused")
     except Exception as err:
         print("Player did not pause.")
-    
-@bot.command(name= 'resume', help= 'Resumes the song')
-async def resume(ctx):
+
+
+#Command to resume the currently paused song
+@bot.command(name = 'resumes', help = 'Resumes the song')
+async def resume(msg):
     try:
-        client = ctx.message.guild.voice_client
-        if client.is_paused():
-            await client.resume()
+        #Get the voice client for the guild the message was sent from
+        channel = msg.message.guild.voice_client
+        #If the client is currently paused, resume playing the song
+        if channel.is_paused():
+            await channel.resume()
+        #Otherwise, inform the user that there is no paused song to resume
         else:
-            await ctx.send("Song stoped will replay")
+            await msg.send("Song stoped will replay")
     except Exception as err:
         print("Player did not resume well.")
 
 
-@bot.command(name= 'leave', help= 'To make the bot leave the voice channel')
-async def leave(ctx):
+#Command to make the bot leave the voice channel
+@bot.command(name = 'leave', help = 'To make the bot leave the voice channel')
+async def leave(msg):
     try:
-        client = ctx.message.guild.voice_client
-        if client.is_connected():
-            await client.disconnect()
+        #Get the voice client for the guild the message was sent from
+        channel = msg.message.guild.voice_client
+        #If the bot is connected to a voice channel, disconnect it
+        if channel.is_connected():
+            # Bot disconnects to the channel
+            await channel.disconnect()
+        #Otherwise, inform the user that the bot has already left the channel
         else:
-            await ctx.send("The bot leaved")
+            await msg.send("The bot leaved")
     except Exception as err:
         print("Bot did not leave.")
 
 
-@bot.command(name= 'stop', help= 'Stops the song')
-async def stop(ctx):
+#Command to stop current music
+@bot.command(name = 'stops', help = 'Stops the song')
+async def stop(msg):
     try:
-        client = ctx.message.guild.voice_client
-        if client.is_playing():
-            await client.stop()
+        #Get the voice client for the guild where the message was sent
+        channel = msg.message.guild.voice_client
+        #Check if the bot is currently playing audio
+        if channel.is_playing():
+            #Stop playing the current audio
+            await channel.stop()
         else:
-            await ctx.send("No music will play")
+            #If the bot is not playing any audio, send a message saying so
+            await msg.send("No music will play")
     except Exception as err:
         print("Bot did not stop.")
+
+
+#Command to display the current playlist
+@bot.command(name = 'playlist', help = 'Displays the current playlist')
+async def display_playlist(msg):
+    await show_playlist(msg)
 
 
 if __name__ == "__main__" :
