@@ -4,10 +4,11 @@ Discord Music Bot is a bot that allows users to play music in their Discord voic
 #### 1.Play music from YouTube using url and name of song
 #### 2.Pause, resume, stop, join, leave, add queue, play song
 #### 3.Display the current playing song in the chat
+
 ## Installation
-1. Clone this repository or download the source code.
-#### 2. Install the required dependencies in python. (discord, discord.ext and import commands,youtube_dl, yt_dlp as youtube_dl, ffmpeg)
-#### 3. Setting up your discord bot and Token
+### 1. Clone this repository or download the source code.
+### 2. Install the required dependencies in python. (discord, discord.ext and import commands,youtube_dl, yt_dlp as youtube_dl, ffmpeg)
+### 3. Setting up your discord bot and Token
 
 ## Usage
 Use the /join command to make bot join the voice channel.
