@@ -35,12 +35,36 @@ ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
 #The YTDLSource class that represents a playable audio source
 class YTDLSource(discord.PCMVolumeTransformer):
+    """
+    Represents a playable audio source, derived from the discord.PCMVolumeTransformer class.
+
+    Args:
+        source (discord.AudioSource): The audio source being passed to the class.
+        data (dict): A dictionary containing the song data.
+        volume (float): The volume level of the audio source, defaults to 0.5.
+    Attributes:
+        data (dict): A dictionary containing the song data.
+        title (str): The title of the audio source.
+        url (str): The URL of the audio source.    
+    """
     def __init__(self, source, *, data, volume = 0.5):
         super().__init__(source, volume)
         self.data = data
         self.title = data.get('title')
         self.url = ""
-
+    
+    """
+    Methods:
+    from_url(cls, url, *, loop = None, stream = False): 
+    A class method that extracts the song using YoutubeDL in a separate thread and returns the filename 
+    of the song based on whether it's a stream or a file.
+    
+    Usage:
+    To use this class, you need to pass a discord.AudioSource to the class constructor along with the song data in a 
+    dictionary format. You can also specify the volume level of the audio source. Additionally, there is a class 
+    method named from_url that takes in the URL of the song and returns the filename of the song based on whether it's 
+    a stream or a file.
+    """
     @classmethod
     async def from_url(cls, url, *, loop = None, stream = False):
         loop = loop or asyncio.get_event_loop()
@@ -57,11 +81,21 @@ class YTDLSource(discord.PCMVolumeTransformer):
 #Event handler for when the bot is ready
 @bot.event
 async def on_ready():
+    """
+    Event handler for when the bot is ready. This function is called automatically when the bot is fully loaded 
+    and ready to execute commands.
+    """
     print("|Bot is ready.|")
 
 
 #Function to show the playlist
 async def show_playlist(msg):
+    """
+    An asynchronous function that shows the playlist to the user.
+    
+    Args:
+        msg (discord.Message): The Discord message object.
+    """
     try:
         #Join the songs in queue into a string with index number for each song
         playlist = ""
@@ -81,6 +115,12 @@ async def show_playlist(msg):
 #Command to make the bot join the voice channel
 @bot.command(name = 'join', help = 'Tells the bot to join the voice channel')
 async def join(msg):
+    """
+    A command that makes the bot join the voice channel that the user is currently connected to.
+    
+    Args:
+        msg (discord.Message): The Discord message object.
+    """
     try:
         #Bot joins the voice channel that the user is currently connected to
         channel = msg.author.voice.channel
@@ -96,6 +136,12 @@ async def join(msg):
 #Command to play a song
 @bot.command(name = 'plays', help = 'To play song')
 async def play_song(msg):
+    """
+    A command that plays all the songs in the queue automatically.
+   
+    Args:
+        msg (discord.Message): The Discord message object.
+    """
     try:
         server = msg.message.guild
         voice_channel = server.voice_client
@@ -119,6 +165,13 @@ async def play_song(msg):
 #Command to add a song to the queue
 @bot.command(name='addq', help='Add a song to the list')
 async def enqueue(msg, url=None):
+    """
+    Adds a song to the queue.
+    
+    Args:
+        msg: The message object that triggered the command.
+        url(str): The URL or name of the song to add to the queue.
+    """
     try:
         if url is None:
             raise commands.MissingRequiredArgument(commands.ParamInfo(
@@ -138,38 +191,57 @@ async def enqueue(msg, url=None):
 #Command to resume the currently paused song
 @bot.command(name = 'pauses', help = 'This command pauses the song')
 async def pause(msg):
-    try:
+    """
+    Pauses the currently playing song.
+    
+    Args:
+        msg: The message object that triggered the command.
+    """
+    try: 
         #Get the voice client for the guild the message was sent from
         channel = msg.message.guild.voice_client
         #If the client is currently playing a song, pause it
         if channel.is_playing():
-            await channel.pause()
+            channel.pause()
+            await msg.send("The bot is paused")
         else:
             #Otherwise, inform the user that the bot is already paused
             await msg.send("The bot is paused")
     except Exception as err:
-        print("Player did not pause.")
+        print("Pause failed")
 
 
 #Command to resume the currently paused song
 @bot.command(name = 'resumes', help = 'Resumes the song')
 async def resume(msg):
+    """
+    Resumes playing the currently paused song.
+    
+    Args:
+        msg: The message object that triggered the command.
+    """
     try:
         #Get the voice client for the guild the message was sent from
         channel = msg.message.guild.voice_client
         #If the client is currently paused, resume playing the song
         if channel.is_paused():
-            await channel.resume()
+            channel.resume()
+            await msg.send("Song stoped will replay")
         #Otherwise, inform the user that there is no paused song to resume
         else:
             await msg.send("Song stoped will replay")
     except Exception as err:
-        print("Player did not resume well.")
+        print("Resume failed")
 
 
 #Command to make the bot leave the voice channel
 @bot.command(name = 'leave', help = 'To make the bot leave the voice channel')
 async def leave(msg):
+    """Disconnects the bot from the voice channel.
+
+    Args:
+        msg: The message object that triggered the command.
+    """
     try:
         #Get the voice client for the guild the message was sent from
         channel = msg.message.guild.voice_client
@@ -177,16 +249,22 @@ async def leave(msg):
         if channel.is_connected():
             # Bot disconnects to the channel
             await channel.disconnect()
-        #Otherwise, inform the user that the bot has already left the channel
-        else:
             await msg.send("The bot leaved")
-    except Exception as err:
-        print("Bot did not leave.")
+        else:
+            await msg.send("The bot is not here")
+    except AttributeError as err:
+        print("The bot is not connected to a voice channel.")
 
 
 #Command to stop current music
 @bot.command(name = 'stops', help = 'Stops the song')
 async def stop(msg):
+    """
+    Stops the currently playing song.
+
+    Args:
+        msg: The message object that triggered the command.
+    """
     try:
         #Get the voice client for the guild where the message was sent
         channel = msg.message.guild.voice_client
@@ -204,8 +282,13 @@ async def stop(msg):
 #Command to display the current playlist
 @bot.command(name = 'playlist', help = 'Displays the current playlist')
 async def display_playlist(msg):
+    """
+    Displays the current playlist.
+    Args:
+        msg: The message object that triggered the command.
+    """
     await show_playlist(msg)
 
-
+    
 if __name__ == "__main__" :
     bot.run(key)
