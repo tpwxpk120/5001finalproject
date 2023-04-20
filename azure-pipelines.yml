@@ -1,0 +1,3 @@
+- task: SpecFlowPlus@0
+  inputs:
+    generatorSource: 'FeatureFolder'
