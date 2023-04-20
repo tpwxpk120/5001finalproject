@@ -1,9 +1,0 @@
-- task: SpecFlowPlus@0
-- task: SpecFlowPlus@0
-  inputs:
-    generatorSource: 'FeatureFolder'
-    projectFilePath: 'differentapp.py'
-    projectName: '5001'
-    projectLanguage: 'en'
-  inputs:
-    generatorSource: 'FeatureFolder'
