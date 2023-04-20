@@ -117,16 +117,22 @@ async def play_song(msg):
 
 
 #Command to add a song to the queue
-@bot.command(name = 'addq', help = 'Add a song to the list')
-async def enqueue(msg, url):
-    async with msg.typing():
-        try:
-            #Get the filename of the song from the url and add it to the queue
+@bot.command(name='addq', help='Add a song to the list')
+async def enqueue(msg, url=None):
+    try:
+        if url is None:
+            raise commands.MissingRequiredArgument(commands.ParamInfo(
+                'url', 'Please provide a valid URL or name of Song'))
+        else:
+            # Get the filename of the song from the url and add it to the queue
             filename = await YTDLSource.from_url(url)
             queue.append(filename)
             await msg.send('Added to queue')
-        except Exception as err:
-            print("Add to queue failed")
+    except commands.MissingRequiredArgument as e:
+        await msg.send(str(e))
+    except Exception as err:
+        print("Add to queue failed")
+        await msg.send('Add to queue failed, and please provide a valid URL or name of Song')
 
 
 #Command to resume the currently paused song
