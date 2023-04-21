@@ -3,7 +3,6 @@ import discord
 from discord.ext import commands
 import yt_dlp as youtube_dl
 
-
 key = 'Your Token'
 intents = discord.Intents().all()
 client = discord.Client(intents = intents)
@@ -13,7 +12,6 @@ bot = commands.Bot(command_prefix='/', intents = intents)
 
 #Set an empty queue for music list 
 queue = []
-
 
 # Setting up the YoutubeDL object with some configuration options
 ytdl_format_options = {
@@ -143,18 +141,17 @@ async def play_song(msg):
         msg (discord.Message): The Discord message object.
     """
     try:
-        server = msg.message.guild
-        voice_channel = server.voice_client
+        channel = msg.message.guild.voice_client
         try:
             while len(queue) > 0:
                 #Get the next song from the queue
                 filename = queue.pop(0)
                 #Play all the song in the queue automatically
-                voice_channel.play(discord.FFmpegPCMAudio(
+                channel.play(discord.FFmpegPCMAudio(
                     executable = "ffmpeg.exe", source = filename), after = lambda x: asyncio.run_coroutine_threadsafe(play_song(msg), bot.loop))
                 await msg.send('——Now playing: {}'.format(filename))
                 #Wait for the song to finish playing
-                while voice_channel.is_playing():
+                while channel.is_playing():
                     await asyncio.sleep(1)
         except Exception as err:
             print("Something wrong with play function")
@@ -163,7 +160,7 @@ async def play_song(msg):
 
 
 #Command to add a song to the queue
-@bot.command(name='addq', help='Add a song to the list')
+@bot.command(name = 'addq', help = 'Add a song to the list')
 async def enqueue(msg, url=None):
     """
     Adds a song to the queue.
@@ -206,7 +203,7 @@ async def pause(msg):
             await msg.send("The bot is paused")
         else:
             #Otherwise, inform the user that the bot is already paused
-            await msg.send("The bot is paused")
+            await msg.send("No music.")
     except Exception as err:
         print("Pause failed")
 
@@ -229,7 +226,7 @@ async def resume(msg):
             await msg.send("Song stoped will replay")
         #Otherwise, inform the user that there is no paused song to resume
         else:
-            await msg.send("Song stoped will replay")
+            await msg.send("No music.")
     except Exception as err:
         print("Resume failed")
 
@@ -271,7 +268,7 @@ async def stop(msg):
         #Check if the bot is currently playing audio
         if channel.is_playing():
             #Stop playing the current audio
-            await channel.stop()
+            channel.stop()
         else:
             #If the bot is not playing any audio, send a message saying so
             await msg.send("No music will play")
@@ -289,6 +286,6 @@ async def display_playlist(msg):
     """
     await show_playlist(msg)
 
-    
+
 if __name__ == "__main__" :
     bot.run(key)
